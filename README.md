@@ -1,96 +1,103 @@
-# [Exception](.)
+# eslint-plugin-prefer-array-at
 
-![npm bundle size](https://img.shields.io/bundlephobia/min/@boi.gg/exception)
-![NPM Unpacked Size](https://img.shields.io/npm/unpacked-size/@boi.gg/exception)
-![NPM Version](https://img.shields.io/npm/v/@boi.gg/exception)
-![NPM Downloads](https://img.shields.io/npm/dy/@boi.gg/exception)
-![Jest Coverage](https://img.shields.io/badge/coverage-100%25-green?logo=jest)
+![npm bundle size](https://img.shields.io/bundlephobia/min/@boi.gg/eslint-plugin-prefer-array-at)
+![NPM Unpacked Size](https://img.shields.io/npm/unpacked-size/@boi.gg/eslint-plugin-prefer-array-at)
+![NPM Version](https://img.shields.io/npm/v/@boi.gg/eslint-plugin-prefer-array-at)
+![NPM Downloads](https://img.shields.io/npm/dy/@boi.gg/eslint-plugin-prefer-array-at)
+![Jest Coverage](https://img.shields.io/badge/coverage-0%25-red?logo=jest)
 
-A tiny, typed, and modular exception-handling library for TypeScript.
+ESLint plugin to prefer `Array.prototype.at()` over traditional bracket indexing.
 
 ## Features
 
-- **Type-Safe**: Associate metadata with your exceptions and get full type-safety.
-- **Modular**: Create and reuse exception kinds across your application.
-- **Lightweight**: Tiny footprint, no dependencies.
-- **Isomorphic**: Works in any JavaScript environment.
+- **Modern Syntax**: Encourages the use of the modern `.at()` method for array access
+- **Auto-fixable**: Automatically fixes bracket notation to use `.at()` method
+- **Type-Safe**: Works seamlessly with TypeScript and JavaScript
+- **Zero Dependencies**: Lightweight with no external dependencies
 
 ## Installation
 
 ```bash
-pnpm add @boi.gg/exception
+pnpm add -D @boi.gg/eslint-plugin-prefer-array-at
+```
+
+```bash
+npm install --save-dev @boi.gg/eslint-plugin-prefer-array-at
+```
+
+```bash
+yarn add -D @boi.gg/eslint-plugin-prefer-array-at
 ```
 
 ## Usage
 
-The core of the library is the `Exception` class. You can create your own exception "kinds" using the static `Exception.kind` method.
+### ESLint Flat Config (eslint.config.js)
 
-### Creating Exception Kinds
+```js
+import preferArrayAt from "@boi.gg/eslint-plugin-prefer-array-at";
 
-`Exception.kind` creates a new subclass of `Exception`. This allows you to group and handle exceptions by their kind.
-
-```ts
-import { Exception } from "@boi.gg/exception";
-
-// Create a simple exception kind
-const UnauthorizedException = Exception.kind("UnauthorizedException");
-
-// Create an exception kind with typed metadata
-type NotFoundMeta = { path: string; method: "GET" | "POST" | "PUT" | "DELETE" };
-const NotFoundException = Exception.kind<NotFoundMeta>("NotFoundException");
+export default [
+  {
+    plugins: {
+      "prefer-array-at": preferArrayAt,
+    },
+    rules: {
+      "prefer-array-at/prefer-array-at": "warn",
+    },
+  },
+];
 ```
 
-### Throwing Exceptions
+Or use the recommended config:
 
-You can then `throw` new instances of your custom exception kinds. The constructor signature is `new Exception(message, meta?, cause?)`.
+```js
+import preferArrayAt from "@boi.gg/eslint-plugin-prefer-array-at";
 
-```ts
-// Throw a simple exception
-throw new UnauthorizedException("You must be logged in to perform this action.");
-
-// Throw an exception with metadata and a cause
-const err = await api.get("/resource/123").catch((e) => e);
-throw new NotFoundException("Resource not found", { path: "/resource/123", method: "GET" }, err);
+export default [preferArrayAt.configs.recommended];
 ```
 
-### Matching and Handling Exceptions
+## Rule: `prefer-array-at`
 
-Use the static `.match()` method on an exception kind to check if an exception is an instance of that kind. This is a type-safe way to handle specific exceptions.
+This rule enforces the use of `.at()` method instead of bracket notation for array element access with numeric literals.
+
+### Examples
+
+#### ❌ Incorrect
 
 ```ts
-import { Exception } from "@boi.gg/exception";
+const array = [1, 2, 3];
+console.log(array[0]); // Use array.at(0) instead
 
-const NotFoundException = Exception.kind<{ path: string }>("NotFoundException");
-
-try {
-  // ... some code that might throw
-} catch (exception) {
-  if (NotFoundException.match(exception)) {
-    // `exception` is now typed as an instance of NotFoundException
-    console.error(`Resource not found at path: ${exception.meta.path}`);
-    console.error(`Original cause:`, exception.cause);
-  } else {
-    // Handle other errors or re-throw
-    throw exception;
-  }
-}
+const fileList = new FileList();
+console.log(fileList[0]); // Use fileList.at(0) or fileList.item(0) instead
 ```
 
-## API
+#### ✅ Correct
 
-### `Exception.kind<Meta>(name)`
+```ts
+const array = [1, 2, 3];
+console.log(array.at(0)); // Using .at() method
 
-- `Meta` (optional): A generic type for the `meta` property of the exception.
-- `name`: `string` - The name of the exception kind. This will be the `name` property on instances.
-- **Returns**: A new exception class that extends `Exception`.
+const fileList = new FileList();
+console.log(fileList.item(0)); // Using .item() for array-like objects
+```
 
-### `new CustomException(message, meta?, cause?)`
+### Auto-fix
 
-- `message`: `string` - The exception message.
-- `meta` (optional): An object containing additional information about the exception. The type is defined by the `Meta` generic when creating the kind. The `meta` object will be frozen.
-- `cause` (optional): `Error | string | undefined` - The original error that caused this exception.
+This rule is auto-fixable. Running ESLint with the `--fix` option will automatically convert bracket notation to `.at()` method:
 
-### `CustomException.match(instance)`
+```bash
+eslint --fix .
+```
 
-- `instance`: `unknown` - The value to check.
-- **Returns**: `boolean` - `true` if the `instance` is an instance of `CustomException`. This also acts as a type guard.
+## Why use `.at()`?
+
+The `.at()` method provides several advantages:
+
+1. **Negative indexing**: `.at(-1)` gets the last element, `.at(-2)` gets the second-to-last, etc.
+2. **Consistency**: Provides a uniform way to access array elements
+3. **Modern JavaScript**: Part of the ES2022 standard
+
+## License
+
+MIT
