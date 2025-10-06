@@ -17,9 +17,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - uses: jdx/mise-action@v2
-      - name: Run ESLint --fix
-        run: pnpm exec eslint ./src --fix
-      - name: Run Prettier --write
+      - name: Run format script
         run: pnpm run format
       - name: Commit and push changes
         run: |

@@ -57,6 +57,6 @@ export default defineConfig(
     },
   },
   {
-    ignores: [".nitro", ".output", "node_modules", ".tanstack"],
+    ignores: [".nitro", ".output", "node_modules", ".tanstack", "dist", "src/scratch.ts"],
   },
 );
