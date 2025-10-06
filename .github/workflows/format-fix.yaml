@@ -17,6 +17,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - uses: jdx/mise-action@v2
+      - name: Install dependencies
+        run: pnpm install
       - name: Run format script
         run: pnpm run format
       - name: Commit and push changes
