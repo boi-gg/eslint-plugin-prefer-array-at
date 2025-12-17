@@ -1,5 +1,7 @@
 # eslint-plugin-prefer-array-at
 
+<img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/c8e01dc6-d215-40aa-896c-e0eec77dbb80" />
+
 ![npm bundle size](https://img.shields.io/bundlephobia/min/@boi.gg/eslint-plugin-prefer-array-at)
 ![NPM Unpacked Size](https://img.shields.io/npm/unpacked-size/@boi.gg/eslint-plugin-prefer-array-at)
 ![NPM Version](https://img.shields.io/npm/v/@boi.gg/eslint-plugin-prefer-array-at)
