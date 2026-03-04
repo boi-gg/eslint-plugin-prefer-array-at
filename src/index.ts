@@ -2,7 +2,7 @@ import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import type * as ts from "typescript";
 
 const isArrayType = (type: ts.Type, checker: ts.TypeChecker): boolean => {
-  const constrainedType = checker.getBaseConstraintOfType(type) ?? type;
+  const constrainedType = checker.getNonNullableType(checker.getBaseConstraintOfType(type) ?? type);
 
   if (constrainedType.isUnion()) {
     return constrainedType.types.every((unionType) => isArrayType(unionType, checker));
@@ -23,13 +23,24 @@ interface ParserServices {
 const isNumberLiteral = (
   property: TSESTree.MemberExpression["property"],
 ): property is { value: number } & TSESTree.Literal =>
-  property.type === ("Literal" as TSESTree.AST_NODE_TYPES.Literal) && typeof property.value === "number";
+  (property.type as string) === "Literal" && typeof property.value === "number";
+
+const needsParentheses = (node: TSESTree.Expression): boolean =>
+  !(
+    (node.type as string) === "Identifier" ||
+    (node.type as string) === "ThisExpression" ||
+    (node.type as string) === "Super" ||
+    (node.type as string) === "CallExpression" ||
+    (node.type as string) === "ChainExpression" ||
+    (node.type as string) === "Literal" ||
+    (node.type as string) === "MemberExpression"
+  );
 
 const preferArrayAtRule = {
   create(context: TSESLint.RuleContext<"useAt", []>): TSESLint.RuleListener {
     const parserServices = context.sourceCode.parserServices as Partial<ParserServices>;
     if (!parserServices.program || !parserServices.esTreeNodeToTSNodeMap) {
-      return {};
+      throw new Error("The prefer-array-at rule requires type information. Set parserOptions.projectService or parserOptions.project.");
     }
 
     const checker = parserServices.program.getTypeChecker();
@@ -37,7 +48,10 @@ const preferArrayAtRule = {
     return {
       MemberExpression(node) {
         if (node.computed && isNumberLiteral(node.property)) {
-          const objectTsNode = parserServices.esTreeNodeToTSNodeMap.get(node.object);
+          const memberTsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
+          const objectTsNode =
+            parserServices.esTreeNodeToTSNodeMap.get(node.object) ??
+            (memberTsNode as { expression?: ts.Node } | undefined)?.expression;
           if (!objectTsNode) {
             return;
           }
@@ -47,12 +61,14 @@ const preferArrayAtRule = {
             return;
           }
 
-          const src = context.sourceCode.getText(node.object);
+          const source = context.sourceCode.getText(node.object);
+          const wrappedSource = needsParentheses(node.object) ? `(${source})` : source;
+          const accessor = node.optional ? "?.at" : ".at";
           const idx = node.property.value;
           context.report({
-            data: { array: src, index: `${idx}` },
+            data: { array: source, index: `${idx}` },
             fix(fixer) {
-              return fixer.replaceText(node, `${src}.at(${idx})`);
+              return fixer.replaceText(node, `${wrappedSource}${accessor}(${idx})`);
             },
             messageId: "useAt",
             node,
@@ -62,6 +78,9 @@ const preferArrayAtRule = {
     };
   },
   meta: {
+    docs: {
+      requiresTypeChecking: true,
+    },
     fixable: "code",
     messages: {
       useAt: "Use {{array}}.at({{index}}) instead of {{array}}[{{index}}].",

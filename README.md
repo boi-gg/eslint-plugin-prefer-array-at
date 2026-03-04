@@ -80,7 +80,7 @@ console.log(tuple[0]); // Use tuple.at(0) instead
 const array = [1, 2, 3];
 console.log(array.at(0)); // Using .at() method
 
-const fileList = new FileList();
+declare const fileList: FileList; // e.g. obtained from an <input type="file"> element
 console.log(fileList[0]); // Non-array array-like objects are ignored
 ```
 
