@@ -23,24 +23,27 @@ interface ParserServices {
 const isNumberLiteral = (
   property: TSESTree.MemberExpression["property"],
 ): property is { value: number } & TSESTree.Literal =>
-  (property.type as string) === "Literal" && typeof property.value === "number";
+  property.type === ("Literal" as typeof property.type) && typeof property.value === "number";
 
-const needsParentheses = (node: TSESTree.Expression): boolean =>
-  !(
-    (node.type as string) === "Identifier" ||
-    (node.type as string) === "ThisExpression" ||
-    (node.type as string) === "Super" ||
-    (node.type as string) === "CallExpression" ||
-    (node.type as string) === "ChainExpression" ||
-    (node.type as string) === "Literal" ||
-    (node.type as string) === "MemberExpression"
-  );
+const nodeTypesWithoutParentheses = new Set<string>([
+  "CallExpression",
+  "ChainExpression",
+  "Identifier",
+  "Literal",
+  "MemberExpression",
+  "Super",
+  "ThisExpression",
+]);
+
+const needsParentheses = (node: TSESTree.Expression): boolean => !nodeTypesWithoutParentheses.has(node.type);
 
 const preferArrayAtRule = {
   create(context: TSESLint.RuleContext<"useAt", []>): TSESLint.RuleListener {
     const parserServices = context.sourceCode.parserServices as Partial<ParserServices>;
     if (!parserServices.program || !parserServices.esTreeNodeToTSNodeMap) {
-      throw new Error("The prefer-array-at rule requires type information. Set parserOptions.projectService or parserOptions.project.");
+      throw new Error(
+        "The prefer-array-at rule requires type information. Set either parserOptions.projectService or parserOptions.project.",
+      );
     }
 
     const checker = parserServices.program.getTypeChecker();
@@ -51,6 +54,7 @@ const preferArrayAtRule = {
           const memberTsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
           const objectTsNode =
             parserServices.esTreeNodeToTSNodeMap.get(node.object) ??
+            // Optional-chain and parenthesized expressions can miss a direct object mapping in some parser-service cases.
             (memberTsNode as { expression?: ts.Node } | undefined)?.expression;
           if (!objectTsNode) {
             return;

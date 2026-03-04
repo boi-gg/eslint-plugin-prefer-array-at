@@ -31,8 +31,14 @@ const overrideConfig = {
 
 const eslint = new ESLint({ overrideConfig: [overrideConfig], overrideConfigFile: true });
 
-const applySingleFix = (code: string, fix: NonNullable<ESLint.LintResult["messages"][number]["fix"]>): string =>
-  `${code.slice(0, fix.range.at(0) ?? 0)}${fix.text}${code.slice(fix.range.at(1) ?? code.length)}`;
+const applySingleFix = (code: string, fix: NonNullable<ESLint.LintResult["messages"][number]["fix"]>): string => {
+  const [start, end] = fix.range;
+  if (typeof start !== "number" || typeof end !== "number") {
+    return code;
+  }
+
+  return `${code.slice(0, start)}${fix.text}${code.slice(end)}`;
+};
 
 const invalidCases = [
   {
