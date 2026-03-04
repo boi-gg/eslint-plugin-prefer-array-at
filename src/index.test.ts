@@ -4,6 +4,9 @@ import { describe, expect, it } from "vitest";
 
 import plugin from "./index.js";
 
+const WINDOWS_DRIVE_PATH_PATTERN = /^\/([A-Za-z]:\/)/;
+const tsconfigRootDir = new URL("..", import.meta.url).pathname.replace(WINDOWS_DRIVE_PATH_PATTERN, "$1");
+
 const overrideConfig = {
   files: ["**/*.ts"],
   languageOptions: {
@@ -14,7 +17,7 @@ const overrideConfig = {
         allowDefaultProject: ["*.ts"],
         defaultProject: "./tsconfig.json",
       },
-      tsconfigRootDir: "/home/runner/work/eslint-plugin-prefer-array-at/eslint-plugin-prefer-array-at",
+      tsconfigRootDir,
     },
     sourceType: "module",
   },

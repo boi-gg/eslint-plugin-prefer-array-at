@@ -1,5 +1,5 @@
-import { AST_NODE_TYPES, ESLintUtils, type TSESLint } from "@typescript-eslint/utils";
-import ts from "typescript";
+import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import type * as ts from "typescript";
 
 const isArrayType = (type: ts.Type, checker: ts.TypeChecker): boolean => {
   const constrainedType = checker.getBaseConstraintOfType(type) ?? type;
@@ -15,15 +15,34 @@ const isArrayType = (type: ts.Type, checker: ts.TypeChecker): boolean => {
   return checker.isArrayType(constrainedType) || checker.isTupleType(constrainedType);
 };
 
+interface ParserServices {
+  esTreeNodeToTSNodeMap: Map<TSESTree.Node, ts.Node>;
+  program: ts.Program;
+}
+
+const isNumberLiteral = (
+  property: TSESTree.MemberExpression["property"],
+): property is { value: number } & TSESTree.Literal =>
+  property.type === ("Literal" as TSESTree.AST_NODE_TYPES.Literal) && typeof property.value === "number";
+
 const preferArrayAtRule = {
   create(context: TSESLint.RuleContext<"useAt", []>): TSESLint.RuleListener {
-    const parserServices = ESLintUtils.getParserServices(context);
+    const parserServices = context.sourceCode.parserServices as Partial<ParserServices>;
+    if (!parserServices.program || !parserServices.esTreeNodeToTSNodeMap) {
+      return {};
+    }
+
     const checker = parserServices.program.getTypeChecker();
 
     return {
       MemberExpression(node) {
-        if (node.computed && node.property.type === AST_NODE_TYPES.Literal && typeof node.property.value === "number") {
-          const objectType = checker.getTypeAtLocation(parserServices.esTreeNodeToTSNodeMap.get(node.object));
+        if (node.computed && isNumberLiteral(node.property)) {
+          const objectTsNode = parserServices.esTreeNodeToTSNodeMap.get(node.object);
+          if (!objectTsNode) {
+            return;
+          }
+
+          const objectType = checker.getTypeAtLocation(objectTsNode);
           if (!isArrayType(objectType, checker)) {
             return;
           }
