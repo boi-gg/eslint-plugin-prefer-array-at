@@ -49,11 +49,15 @@ const invalidCases = [
     code: "const tuple: [number, number] = [1, 2]; tuple[0];",
     output: "const tuple: [number, number] = [1, 2]; tuple.at(0);",
   },
+  {
+    code: "declare const fileList: FileList; fileList[0];",
+    output: "declare const fileList: FileList; fileList.item(0);",
+  },
 ] as const;
 
 const validCases = [
   "const array: number[] = [1, 2, 3]; array.at(0);",
-  "declare const fileList: FileList; fileList[0];",
+  "declare const fileList: FileList; fileList.item(0);",
   "const obj: Record<number, string> = { 0: 'a' }; obj[0];",
   "const array: number[] = [1, 2, 3]; const i = 0; array[i];",
 ] as const;

@@ -60,7 +60,7 @@ export default [preferArrayAt.configs.recommended];
 
 ## Rule: `prefer-array-at`
 
-This type-aware rule enforces the use of `.at()` method instead of bracket notation for array and tuple element access with numeric literals.
+This type-aware rule enforces method-based access (`.at()`/`.item()`) instead of bracket notation for array, tuple, and `FileList` element access with numeric literals.
 
 ### Examples
 
@@ -72,6 +72,9 @@ console.log(array[0]); // Use array.at(0) instead
 
 const tuple: [number, number] = [1, 2];
 console.log(tuple[0]); // Use tuple.at(0) instead
+
+declare const fileList: FileList;
+console.log(fileList[0]); // Use fileList.item(0) instead
 ```
 
 #### ✅ Correct
@@ -81,7 +84,7 @@ const array = [1, 2, 3];
 console.log(array.at(0)); // Using .at() method
 
 declare const fileList: FileList; // e.g. obtained from an <input type="file"> element
-console.log(fileList[0]); // Non-array array-like objects are ignored
+console.log(fileList.item(0)); // Using .item() for FileList access
 ```
 
 ### Auto-fix

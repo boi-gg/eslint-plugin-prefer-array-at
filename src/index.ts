@@ -1,18 +1,34 @@
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import type * as ts from "typescript";
 
-const isArrayType = (type: ts.Type, checker: ts.TypeChecker): boolean => {
+type TargetKind = "array" | "fileList";
+
+const resolveTargetKind = (type: ts.Type, checker: ts.TypeChecker): null | TargetKind => {
   const constrainedType = checker.getNonNullableType(checker.getBaseConstraintOfType(type) ?? type);
 
   if (constrainedType.isUnion()) {
-    return constrainedType.types.every((unionType) => isArrayType(unionType, checker));
+    const kinds = constrainedType.types.map((unionType) => resolveTargetKind(unionType, checker));
+    const firstKind = kinds.at(0);
+    return firstKind != null && kinds.every((kind) => kind === firstKind) ? firstKind : null;
   }
 
   if (constrainedType.isIntersection()) {
-    return constrainedType.types.some((intersectionType) => isArrayType(intersectionType, checker));
+    for (const intersectionType of constrainedType.types) {
+      const kind = resolveTargetKind(intersectionType, checker);
+      if (kind) {
+        return kind;
+      }
+    }
+    return null;
   }
 
-  return checker.isArrayType(constrainedType) || checker.isTupleType(constrainedType);
+  if (checker.isArrayType(constrainedType) || checker.isTupleType(constrainedType)) {
+    return "array";
+  }
+
+  return constrainedType.getSymbol()?.getName() === "FileList" || constrainedType.aliasSymbol?.getName() === "FileList"
+    ? "fileList"
+    : null;
 };
 
 interface ParserServices {
@@ -61,16 +77,18 @@ const preferArrayAtRule = {
           }
 
           const objectType = checker.getTypeAtLocation(objectTsNode);
-          if (!isArrayType(objectType, checker)) {
+          const targetKind = resolveTargetKind(objectType, checker);
+          if (!targetKind) {
             return;
           }
 
           const source = context.sourceCode.getText(node.object);
           const wrappedSource = needsParentheses(node.object) ? `(${source})` : source;
-          const accessor = node.optional ? "?.at" : ".at";
+          const method = targetKind === "fileList" ? "item" : "at";
+          const accessor = node.optional ? `?.${method}` : `.${method}`;
           const idx = node.property.value;
           context.report({
-            data: { array: source, index: `${idx}` },
+            data: { array: source, index: `${idx}`, method },
             fix(fixer) {
               return fixer.replaceText(node, `${wrappedSource}${accessor}(${idx})`);
             },
@@ -87,7 +105,7 @@ const preferArrayAtRule = {
     },
     fixable: "code",
     messages: {
-      useAt: "Use {{array}}.at({{index}}) instead of {{array}}[{{index}}].",
+      useAt: "Use {{array}}.{{method}}({{index}}) instead of {{array}}[{{index}}].",
     },
     type: "suggestion",
   },
