@@ -27,9 +27,9 @@ const overrideConfig = {
   rules: {
     "prefer-array-at/prefer-array-at": "error",
   },
-} as const;
+};
 
-const eslint = new ESLint({ overrideConfig: [overrideConfig], overrideConfigFile: true });
+const eslint = new ESLint({ overrideConfig: [overrideConfig], overrideConfigFile: true } as ESLint.Options);
 
 const applySingleFix = (code: string, fix: NonNullable<ESLint.LintResult["messages"][number]["fix"]>): string => {
   const [start, end] = fix.range;

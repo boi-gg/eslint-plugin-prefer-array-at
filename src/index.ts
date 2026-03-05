@@ -1,5 +1,5 @@
-import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import type * as ts from "typescript";
+import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 type TargetKind = "array" | "fileList";
 
@@ -38,8 +38,7 @@ interface ParserServices {
 
 const isNumberLiteral = (
   property: TSESTree.MemberExpression["property"],
-): property is { value: number } & TSESTree.Literal =>
-  property.type === ("Literal" as typeof property.type) && typeof property.value === "number";
+): property is { value: number } & TSESTree.Literal => "value" in property && typeof property.value === "number";
 
 const nodeTypesWithoutParentheses = new Set<string>([
   "CallExpression",
@@ -53,8 +52,8 @@ const nodeTypesWithoutParentheses = new Set<string>([
 
 const needsParentheses = (node: TSESTree.Expression): boolean => !nodeTypesWithoutParentheses.has(node.type);
 
-const preferArrayAtRule = {
-  create(context: TSESLint.RuleContext<"useAt", []>): TSESLint.RuleListener {
+const preferArrayAtRule: TSESLint.RuleModule<"useAt"> = {
+  create(context) {
     const parserServices = context.sourceCode.parserServices as Partial<ParserServices>;
     if (!parserServices.program || !parserServices.esTreeNodeToTSNodeMap) {
       throw new Error(
@@ -63,13 +62,14 @@ const preferArrayAtRule = {
     }
 
     const checker = parserServices.program.getTypeChecker();
+    const esTreeNodeToTSNodeMap = parserServices.esTreeNodeToTSNodeMap;
 
     return {
       MemberExpression(node) {
         if (node.computed && isNumberLiteral(node.property)) {
-          const memberTsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
+          const memberTsNode = esTreeNodeToTSNodeMap.get(node);
           const objectTsNode =
-            parserServices.esTreeNodeToTSNodeMap.get(node.object) ??
+            esTreeNodeToTSNodeMap.get(node.object) ??
             // Optional-chain and parenthesized expressions can miss a direct object mapping in some parser-service cases.
             (memberTsNode as { expression?: ts.Node } | undefined)?.expression;
           if (!objectTsNode) {
@@ -100,38 +100,33 @@ const preferArrayAtRule = {
     };
   },
   meta: {
-    docs: {
-      requiresTypeChecking: true,
-    },
+    docs: { requiresTypeChecking: true } as unknown as TSESLint.RuleMetaDataDocs,
     fixable: "code",
     messages: {
       useAt: "Use {{array}}.{{method}}({{index}}) instead of {{array}}[{{index}}].",
     },
+    schema: [],
     type: "suggestion",
   },
-} as const;
+};
 
 const rules = {
   "prefer-array-at": preferArrayAtRule,
-} as const;
+};
 
 const plugin = {
-  rules: {
-    "prefer-array-at": preferArrayAtRule,
-  },
-} as const;
+  rules,
+} satisfies TSESLint.FlatConfig.Plugin;
 
 const configs = {
   recommended: {
     plugins: {
-      "prefer-array-at": {
-        rules,
-      },
+      "prefer-array-at": plugin,
     },
     rules: {
       "prefer-array-at/prefer-array-at": "warn",
     },
   },
-} as const;
+};
 
 export default { ...plugin, configs };
