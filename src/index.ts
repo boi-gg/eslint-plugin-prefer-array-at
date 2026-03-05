@@ -31,6 +31,10 @@ const resolveTargetKind = (type: ts.Type, checker: ts.TypeChecker): null | Targe
     : null;
 };
 
+interface ESTreeNode {
+  type: string;
+}
+
 interface ExpressionNode {
   type: string;
 }
@@ -41,7 +45,7 @@ interface MemberExpressionProperty {
 }
 
 interface ParserServices {
-  esTreeNodeToTSNodeMap: Map<unknown, ts.Node>;
+  esTreeNodeToTSNodeMap: Map<ESTreeNode, ts.Node>;
   program: ts.Program;
 }
 
