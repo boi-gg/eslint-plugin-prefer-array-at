@@ -1,5 +1,5 @@
-import type * as ts from "typescript";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import type * as ts from "typescript";
 
 type TargetKind = "array" | "fileList";
 
@@ -36,9 +36,12 @@ interface ParserServices {
   program: ts.Program;
 }
 
+const literalPropertyType = "Literal" as TSESTree.Literal["type"];
+
 const isNumberLiteral = (
   property: TSESTree.MemberExpression["property"],
-): property is { value: number } & TSESTree.Literal => "value" in property && typeof property.value === "number";
+): property is { value: number } & TSESTree.Literal =>
+  property.type === literalPropertyType && typeof property.value === "number";
 
 const nodeTypesWithoutParentheses = new Set<string>([
   "CallExpression",
@@ -51,6 +54,11 @@ const nodeTypesWithoutParentheses = new Set<string>([
 ]);
 
 const needsParentheses = (node: TSESTree.Expression): boolean => !nodeTypesWithoutParentheses.has(node.type);
+
+const ruleDocs: { requiresTypeChecking: true } & TSESLint.RuleMetaDataDocs = {
+  description: "Prefer .at() for arrays/tuples and .item() for FileList numeric index access.",
+  requiresTypeChecking: true,
+};
 
 const preferArrayAtRule: TSESLint.RuleModule<"useAt"> = {
   create(context) {
@@ -100,7 +108,7 @@ const preferArrayAtRule: TSESLint.RuleModule<"useAt"> = {
     };
   },
   meta: {
-    docs: { requiresTypeChecking: true } as unknown as TSESLint.RuleMetaDataDocs,
+    docs: ruleDocs,
     fixable: "code",
     messages: {
       useAt: "Use {{array}}.{{method}}({{index}}) instead of {{array}}[{{index}}].",
