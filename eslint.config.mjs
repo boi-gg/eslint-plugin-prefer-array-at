@@ -7,12 +7,14 @@ import tseslint from "typescript-eslint";
 
 import plugin from "./dist/index.js";
 
+const recommendedPluginConfig = /** @type {import("eslint").Linter.Config} */ (plugin.configs.recommended);
+
 export default defineConfig(
   eslint.configs.recommended,
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,
   perfectionist.configs["recommended-alphabetical"],
-  plugin.configs.recommended,
+  recommendedPluginConfig,
   {
     rules: {
       "perfectionist/sort-imports": "warn",
