@@ -1,4 +1,4 @@
-import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import type { ESLint, Rule } from "eslint";
 import type * as ts from "typescript";
 
 type TargetKind = "array" | "fileList";
@@ -31,17 +31,24 @@ const resolveTargetKind = (type: ts.Type, checker: ts.TypeChecker): null | Targe
     : null;
 };
 
+interface ExpressionNode {
+  type: string;
+}
+
+interface MemberExpressionProperty {
+  type: string;
+  value?: unknown;
+}
+
 interface ParserServices {
-  esTreeNodeToTSNodeMap: Map<TSESTree.Node, ts.Node>;
+  esTreeNodeToTSNodeMap: Map<unknown, ts.Node>;
   program: ts.Program;
 }
 
-const literalPropertyType = "Literal" as TSESTree.Literal["type"];
-
 const isNumberLiteral = (
-  property: TSESTree.MemberExpression["property"],
-): property is { value: number } & TSESTree.Literal =>
-  property.type === literalPropertyType && typeof property.value === "number";
+  property: MemberExpressionProperty,
+): property is { value: number } & MemberExpressionProperty =>
+  property.type === "Literal" && typeof property.value === "number";
 
 const nodeTypesWithoutParentheses = new Set<string>([
   "CallExpression",
@@ -53,15 +60,15 @@ const nodeTypesWithoutParentheses = new Set<string>([
   "ThisExpression",
 ]);
 
-const needsParentheses = (node: TSESTree.Expression): boolean => !nodeTypesWithoutParentheses.has(node.type);
+const needsParentheses = (node: ExpressionNode): boolean => !nodeTypesWithoutParentheses.has(node.type);
 
-const ruleDocs: { requiresTypeChecking: true } & TSESLint.RuleMetaDataDocs = {
+const ruleDocs = {
   description: "Prefer .at() for arrays/tuples and .item() for FileList numeric index access.",
   requiresTypeChecking: true,
 };
 
-const preferArrayAtRule: TSESLint.RuleModule<"useAt"> = {
-  create(context) {
+const preferArrayAtRule: Rule.RuleModule = {
+  create(context: Rule.RuleContext): Rule.RuleListener {
     const parserServices = context.sourceCode.parserServices as Partial<ParserServices>;
     if (!parserServices.program || !parserServices.esTreeNodeToTSNodeMap) {
       throw new Error(
@@ -124,7 +131,7 @@ const rules = {
 
 const plugin = {
   rules,
-} satisfies TSESLint.FlatConfig.Plugin;
+} satisfies ESLint.Plugin;
 
 const configs = {
   recommended: {
