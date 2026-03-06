@@ -1,7 +1,25 @@
 import type { ESLint, Rule } from "eslint";
 import type * as ts from "typescript";
 
-type TargetKind = "array" | "fileList";
+type TargetKind = "array" | "item" | "warnArguments" | "warnDomTokenList";
+
+interface RuleOption {
+  warnOnUnsupportedArrayLike?: boolean;
+}
+
+const itemMethodTypeNames = new Set<string>([
+  "FileList",
+  "HTMLCollection",
+  "HTMLCollectionOf",
+  "NamedNodeMap",
+  "NodeList",
+  "NodeListOf",
+]);
+
+const warnOnlyTypeKinds = {
+  DOMTokenList: "warnDomTokenList",
+  IArguments: "warnArguments",
+} as const satisfies Record<string, TargetKind>;
 
 const resolveTargetKind = (type: ts.Type, checker: ts.TypeChecker): null | TargetKind => {
   const constrainedType = checker.getNonNullableType(checker.getBaseConstraintOfType(type) ?? type);
@@ -26,9 +44,26 @@ const resolveTargetKind = (type: ts.Type, checker: ts.TypeChecker): null | Targe
     return "array";
   }
 
-  return constrainedType.getSymbol()?.getName() === "FileList" || constrainedType.aliasSymbol?.getName() === "FileList"
-    ? "fileList"
-    : null;
+  const symbolName = constrainedType.getSymbol()?.getName();
+  const aliasSymbolName = constrainedType.aliasSymbol?.getName();
+
+  if (symbolName && itemMethodTypeNames.has(symbolName)) {
+    return "item";
+  }
+
+  if (aliasSymbolName && itemMethodTypeNames.has(aliasSymbolName)) {
+    return "item";
+  }
+
+  if (symbolName && symbolName in warnOnlyTypeKinds) {
+    return warnOnlyTypeKinds[symbolName as keyof typeof warnOnlyTypeKinds];
+  }
+
+  if (aliasSymbolName && aliasSymbolName in warnOnlyTypeKinds) {
+    return warnOnlyTypeKinds[aliasSymbolName as keyof typeof warnOnlyTypeKinds];
+  }
+
+  return null;
 };
 
 interface ESTreeNode {
@@ -67,12 +102,16 @@ const nodeTypesWithoutParentheses = new Set<string>([
 const needsParentheses = (node: ExpressionNode): boolean => !nodeTypesWithoutParentheses.has(node.type);
 
 const ruleDocs = {
-  description: "Prefer .at() for arrays/tuples and .item() for FileList numeric index access.",
+  description:
+    "Prefer .at()/.item() for supported array-likes and optionally warn on unsupported numeric literal indexing.",
   requiresTypeChecking: true,
 };
 
 const preferArrayAtRule: Rule.RuleModule = {
   create(context: Rule.RuleContext): Rule.RuleListener {
+    const [options] = (context.options as RuleOption[]) ?? [];
+    const warnOnUnsupportedArrayLike = options?.warnOnUnsupportedArrayLike ?? false;
+
     const parserServices = context.sourceCode.parserServices as Partial<ParserServices>;
     if (!parserServices.program || !parserServices.esTreeNodeToTSNodeMap) {
       throw new Error(
@@ -102,16 +141,34 @@ const preferArrayAtRule: Rule.RuleModule = {
           }
 
           const source = context.sourceCode.getText(node.object);
-          const wrappedSource = needsParentheses(node.object) ? `(${source})` : source;
-          const method = targetKind === "fileList" ? "item" : "at";
-          const accessor = node.optional ? `?.${method}` : `.${method}`;
           const idx = node.property.value;
+
+          if (targetKind === "warnDomTokenList" || targetKind === "warnArguments") {
+            if (!warnOnUnsupportedArrayLike) {
+              return;
+            }
+
+            context.report({
+              data: {
+                array: source,
+                index: `${idx}`,
+                kind: targetKind === "warnDomTokenList" ? "DOMTokenList" : "arguments",
+              },
+              messageId: "warnUnsupportedIndexing",
+              node,
+            });
+            return;
+          }
+
+          const wrappedSource = needsParentheses(node.object) ? `(${source})` : source;
+          const method = targetKind === "item" ? "item" : "at";
+          const accessor = node.optional ? `?.${method}` : `.${method}`;
           context.report({
             data: { array: source, index: `${idx}`, method },
             fix(fixer) {
               return fixer.replaceText(node, `${wrappedSource}${accessor}(${idx})`);
             },
-            messageId: "useAt",
+            messageId: "useMethod",
             node,
           });
         }
@@ -122,9 +179,21 @@ const preferArrayAtRule: Rule.RuleModule = {
     docs: ruleDocs,
     fixable: "code",
     messages: {
-      useAt: "Use {{array}}.{{method}}({{index}}) instead of {{array}}[{{index}}].",
+      useMethod: "Use {{array}}.{{method}}({{index}}) instead of {{array}}[{{index}}].",
+      warnUnsupportedIndexing:
+        "Avoid {{kind}} numeric indexing ({{array}}[{{index}}]); this rule has no safe automatic replacement.",
     },
-    schema: [],
+    schema: [
+      {
+        additionalProperties: false,
+        properties: {
+          warnOnUnsupportedArrayLike: {
+            type: "boolean",
+          },
+        },
+        type: "object",
+      },
+    ],
     type: "suggestion",
   },
 };
@@ -133,11 +202,19 @@ const rules = {
   "prefer-array-at": preferArrayAtRule,
 };
 
-const plugin = {
+const plugin: ESLint.Plugin = {
   rules,
-} satisfies ESLint.Plugin;
+};
 
-const configs = {
+const configs: NonNullable<ESLint.Plugin["configs"]> = {
+  all: {
+    plugins: {
+      "prefer-array-at": plugin,
+    },
+    rules: {
+      "prefer-array-at/prefer-array-at": ["warn", { warnOnUnsupportedArrayLike: true }],
+    },
+  },
   recommended: {
     plugins: {
       "prefer-array-at": plugin,
@@ -148,4 +225,6 @@ const configs = {
   },
 };
 
-export default { ...plugin, configs };
+plugin.configs = configs;
+
+export default plugin;

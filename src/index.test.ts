@@ -29,7 +29,15 @@ const overrideConfig = {
   },
 };
 
+const overrideConfigAll = {
+  ...overrideConfig,
+  rules: {
+    "prefer-array-at/prefer-array-at": ["error", { warnOnUnsupportedArrayLike: true }],
+  },
+};
+
 const eslint = new ESLint({ overrideConfig: [overrideConfig], overrideConfigFile: true } as ESLint.Options);
+const eslintAll = new ESLint({ overrideConfig: [overrideConfigAll], overrideConfigFile: true } as ESLint.Options);
 
 const applySingleFix = (code: string, fix: NonNullable<ESLint.LintResult["messages"][number]["fix"]>): string => {
   const [start, end] = fix.range;
@@ -53,11 +61,36 @@ const invalidCases = [
     code: "declare const fileList: FileList; fileList[0];",
     output: "declare const fileList: FileList; fileList.item(0);",
   },
+  {
+    code: "declare const nodes: NodeList; nodes[0];",
+    output: "declare const nodes: NodeList; nodes.item(0);",
+  },
+  {
+    code: "declare const nodes: NodeListOf<Element>; nodes[0];",
+    output: "declare const nodes: NodeListOf<Element>; nodes.item(0);",
+  },
+  {
+    code: "declare const collection: HTMLCollection; collection[0];",
+    output: "declare const collection: HTMLCollection; collection.item(0);",
+  },
+  {
+    code: "declare const collection: HTMLCollectionOf<Element>; collection[0];",
+    output: "declare const collection: HTMLCollectionOf<Element>; collection.item(0);",
+  },
+  {
+    code: "declare const map: NamedNodeMap; map[0];",
+    output: "declare const map: NamedNodeMap; map.item(0);",
+  },
 ] as const;
 
 const validCases = [
   "const array: number[] = [1, 2, 3]; array.at(0);",
   "declare const fileList: FileList; fileList.item(0);",
+  "declare const nodes: NodeListOf<Element>; nodes.item(0);",
+  "declare const collection: HTMLCollectionOf<Element>; collection.item(0);",
+  "declare const map: NamedNodeMap; map.item(0);",
+  "declare const tokenList: DOMTokenList; tokenList[0];",
+  "function fn() { return arguments[0]; }",
   "const obj: Record<number, string> = { 0: 'a' }; obj[0];",
   "const array: number[] = [1, 2, 3]; const i = 0; array[i];",
 ] as const;
@@ -82,6 +115,21 @@ describe("prefer-array-at", () => {
     for (const code of validCases) {
       const [result] = await eslint.lintText(code, { filePath: "test.ts" });
       expect(result.messages).toHaveLength(0);
+    }
+  });
+
+  it("reports unsupported DOMTokenList/arguments numeric indexing in all config mode", async () => {
+    const unsupportedCases = [
+      "declare const tokenList: DOMTokenList; tokenList[0];",
+      "function fn() { return arguments[0]; }",
+    ];
+
+    for (const code of unsupportedCases) {
+      const [result] = await eslintAll.lintText(code, { filePath: "test.ts" });
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages.at(0)?.ruleId).toBe("prefer-array-at/prefer-array-at");
+      expect(result.messages.at(0)?.messageId).toBe("warnUnsupportedIndexing");
+      expect(result.messages.at(0)?.fix).toBeUndefined();
     }
   });
 });
