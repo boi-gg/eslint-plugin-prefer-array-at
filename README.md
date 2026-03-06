@@ -99,6 +99,7 @@ eslint --fix .
 
 The `.at()` method provides several advantages:
 
+0. **Type-safety**: `arr[number]` resolves to `T`, but it's actually `T | undefined`. `arr.at(number)` resolves to `T | null`
 1. **Negative indexing**: `.at(-1)` gets the last element, `.at(-2)` gets the second-to-last, etc.
 2. **Consistency**: Provides a uniform way to access array elements
 3. **Modern JavaScript**: Part of the ES2022 standard
