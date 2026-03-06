@@ -1,25 +1,26 @@
 name: Release to npm
 
 on:
-  workflow_dispatch:
   push:
     tags:
       - "v*"
-
-env:
-  MISE_EXPERIMENTAL: true
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: read
+      contents: write
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - uses: jdx/mise-action@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
 
       - name: Validate tag format
         run: |
@@ -29,6 +30,13 @@ jobs:
             echo "Expected format: v<major>.<minor>.<patch> (e.g. v1.2.3)"
             exit 1
           fi
+          echo "TAG_VERSION=${TAG#v}" >> "$GITHUB_ENV"
+
+      - name: Set package version from tag
+        run: npm pkg set version="$TAG_VERSION"
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -36,5 +44,27 @@ jobs:
       - name: Run CI checks
         run: pnpm run ci
 
+      - name: Use latest npm for trusted publishing
+        run: npm install -g npm@latest
+
       - name: Publish to npm
-        run: npm publish --access public
+        run: npm publish --provenance --access public
+
+      - name: Checkout default branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+
+      - name: Persist version bump to repository
+        run: |
+          npm pkg set version="$TAG_VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          if git diff --staged --quiet; then
+            echo "package.json already up to date"
+            exit 0
+          fi
+          git commit -m "chore: bump version to v$TAG_VERSION"
+          git push origin "HEAD:${{ github.event.repository.default_branch }}"

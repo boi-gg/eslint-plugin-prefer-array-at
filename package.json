@@ -5,7 +5,7 @@
   "private": false,
   "description": "ESLint plugin to prefer Array.prototype.at() over traditional indexing.",
   "repository": {
-    "url": "https://github.com/boi-gg/eslint-plugin-prefer-array-at"
+    "url": "git+https://github.com/boi-gg/eslint-plugin-prefer-array-at.git"
   },
   "readme": "https://github.com/boi-gg/eslint-plugin-prefer-array-at/blob/develop/README.md",
   "type": "module",
