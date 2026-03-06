@@ -1,4 +1,4 @@
-import type { ESLint, Rule } from "eslint";
+import type { ESLint, Linter, Rule } from "eslint";
 import type * as ts from "typescript";
 
 interface RuleOption {
@@ -202,8 +202,8 @@ const rules = {
   "prefer-array-at": preferArrayAtRule,
 };
 
-type PluginConfigs = NonNullable<ESLint.Plugin["configs"]>;
-type PluginWithConfigs = { configs: PluginConfigs } & ESLint.Plugin;
+type PluginConfigs = Record<string, Array<Linter.Config> | Linter.Config>;
+type PluginWithConfigs = { configs: PluginConfigs } & Omit<ESLint.Plugin, "configs">;
 
 const plugin: PluginWithConfigs = {
   configs: {},
