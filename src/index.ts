@@ -1,11 +1,11 @@
 import type { ESLint, Rule } from "eslint";
 import type * as ts from "typescript";
 
-type TargetKind = "array" | "item" | "warnArguments" | "warnDomTokenList";
-
 interface RuleOption {
   warnOnUnsupportedArrayLike?: boolean;
 }
+
+type TargetKind = "array" | "item" | "warnArguments" | "warnDomTokenList";
 
 const itemMethodTypeNames = new Set<string>([
   "FileList",
@@ -109,7 +109,7 @@ const ruleDocs = {
 
 const preferArrayAtRule: Rule.RuleModule = {
   create(context: Rule.RuleContext): Rule.RuleListener {
-    const [options] = (context.options as RuleOption[]) ?? [];
+    const options = context.options.at(0) as RuleOption | undefined;
     const warnOnUnsupportedArrayLike = options?.warnOnUnsupportedArrayLike ?? false;
 
     const parserServices = context.sourceCode.parserServices as Partial<ParserServices>;
@@ -202,11 +202,15 @@ const rules = {
   "prefer-array-at": preferArrayAtRule,
 };
 
-const plugin: ESLint.Plugin = {
+type PluginConfigs = NonNullable<ESLint.Plugin["configs"]>;
+type PluginWithConfigs = { configs: PluginConfigs } & ESLint.Plugin;
+
+const plugin: PluginWithConfigs = {
+  configs: {},
   rules,
 };
 
-const configs: NonNullable<ESLint.Plugin["configs"]> = {
+const configs: PluginConfigs = {
   all: {
     plugins: {
       "prefer-array-at": plugin,
