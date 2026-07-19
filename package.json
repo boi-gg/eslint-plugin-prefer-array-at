@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-prefer-array-at",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "private": false,
   "description": "ESLint plugin to prefer Array.prototype.at() over traditional indexing.",
