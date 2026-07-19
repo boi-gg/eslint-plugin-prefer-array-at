@@ -39,8 +39,8 @@ jobs:
       - name: Run CI checks
         run: mise run ci
 
-      - name: Use latest npm for trusted publishing
-        run: npm install -g npm@latest
+      - name: Use npm 11 for trusted publishing
+        run: npm install -g npm@11.18.0
 
       - name: Publish to npm
         run: npm publish --provenance --access public
