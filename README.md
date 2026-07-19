@@ -2,10 +2,10 @@
 
 <img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/c8e01dc6-d215-40aa-896c-e0eec77dbb80" />
 
-![npm bundle size](https://img.shields.io/bundlephobia/min/@boi.gg/eslint-plugin-prefer-array-at)
-![NPM Unpacked Size](https://img.shields.io/npm/unpacked-size/@boi.gg/eslint-plugin-prefer-array-at)
-![NPM Version](https://img.shields.io/npm/v/@boi.gg/eslint-plugin-prefer-array-at)
-![NPM Downloads](https://img.shields.io/npm/dy/@boi.gg/eslint-plugin-prefer-array-at)
+![npm bundle size](https://img.shields.io/bundlephobia/min/eslint-plugin-prefer-array-at)
+![NPM Unpacked Size](https://img.shields.io/npm/unpacked-size/eslint-plugin-prefer-array-at)
+![NPM Version](https://img.shields.io/npm/v/eslint-plugin-prefer-array-at)
+![NPM Downloads](https://img.shields.io/npm/dy/eslint-plugin-prefer-array-at)
 ![Jest Coverage](https://img.shields.io/badge/coverage-0%25-red?logo=jest)
 
 ESLint plugin to prefer method-based indexed access (`.at()` / `.item()`) over traditional bracket indexing.
@@ -20,15 +20,15 @@ ESLint plugin to prefer method-based indexed access (`.at()` / `.item()`) over t
 ## Installation
 
 ```bash
-pnpm add -D @boi.gg/eslint-plugin-prefer-array-at
+pnpm add -D eslint-plugin-prefer-array-at
 ```
 
 ```bash
-npm install --save-dev @boi.gg/eslint-plugin-prefer-array-at
+npm install --save-dev eslint-plugin-prefer-array-at
 ```
 
 ```bash
-yarn add -D @boi.gg/eslint-plugin-prefer-array-at
+yarn add -D eslint-plugin-prefer-array-at
 ```
 
 ## Usage
@@ -36,7 +36,7 @@ yarn add -D @boi.gg/eslint-plugin-prefer-array-at
 ### ESLint Flat Config (eslint.config.js)
 
 ```js
-import preferArrayAt from "@boi.gg/eslint-plugin-prefer-array-at";
+import preferArrayAt from "eslint-plugin-prefer-array-at";
 
 export default [
   {
@@ -53,7 +53,7 @@ export default [
 Or use the recommended config:
 
 ```js
-import preferArrayAt from "@boi.gg/eslint-plugin-prefer-array-at";
+import preferArrayAt from "eslint-plugin-prefer-array-at";
 
 export default [preferArrayAt.configs.recommended];
 ```
@@ -61,7 +61,7 @@ export default [preferArrayAt.configs.recommended];
 If you also want warnings for unsupported numeric indexing on `DOMTokenList` and `arguments`, use the `all` config:
 
 ```js
-import preferArrayAt from "@boi.gg/eslint-plugin-prefer-array-at";
+import preferArrayAt from "eslint-plugin-prefer-array-at";
 
 export default [preferArrayAt.configs.all];
 ```
