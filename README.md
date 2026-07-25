@@ -1,3 +1,9 @@
+> **⚠️ DEPRECATED (2026-07-25)**
+>
+> This plugin is **deprecated** in favor of mature, widely-adopted alternatives.
+> No further development or maintenance is planned. See the
+> [Alternatives](#alternatives) section below for recommended replacements.
+
 # eslint-plugin-prefer-array-at
 
 <img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/c8e01dc6-d215-40aa-896c-e0eec77dbb80" />
@@ -144,6 +150,16 @@ The `.at()` method provides several advantages:
 1. **Negative indexing**: `.at(-1)` gets the last element, `.at(-2)` gets the second-to-last, etc.
 2. **Consistency**: Provides a uniform way to access array elements
 3. **Modern JavaScript**: Part of the ES2022 standard
+
+## Alternatives
+
+This plugin is deprecated. Use one of these mature, widely-adopted alternatives instead:
+
+- **[typescript-eslint](https://typescript-eslint.io)** (`@typescript-eslint/eslint-plugin`) — rule `prefer-at`. ~68M weekly downloads. Type-aware. Most popular. No auto-fix. Does **not** handle DOM collections.
+- **[eslint-plugin-unicorn](https://github.com/sindresorhus/eslint-plugin-unicorn)** — rule `prefer-at`. ~7M weekly downloads. Broad adoption. Not type-aware.
+- **[@e18e/eslint-plugin](https://github.com/e18e/eslint-plugin)** — rule `prefer-array-at`. Smaller. Not type-aware.
+
+> **Note:** None of the alternatives above handle DOM collections (`NodeList`/`HTMLCollection` → `.item()`), which was this plugin's unique feature. Users relying on that specific behavior may want to keep this plugin or file a feature request upstream against one of the alternatives.
 
 ## License
 
